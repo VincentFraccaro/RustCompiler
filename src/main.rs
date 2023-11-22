@@ -4,7 +4,7 @@ mod generate;
 use std::{env, fs};
 use std::process::{Command};
 use crate::generate::tokens_to_assembly;
-use crate::tokenisation::{Token, tokenise};
+use crate::tokenisation::{Tokeniser};
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -25,9 +25,10 @@ fn main() {
 
 
 
-    let tokens: Vec<Token> = tokenise(contents);
-    for x in &tokens {
-        println!("{:?}", x.token_type);
+    let mut tokeniser = Tokeniser::new(contents);
+    let tokens = tokeniser.tokenize();
+    for token in &tokens {
+        println!("{:?}", token.token_type);
     }
 
     let assembly = tokens_to_assembly(tokens);
