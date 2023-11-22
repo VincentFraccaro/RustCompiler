@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="RemoteTargetsManager">
+    <targets>
+      <target name="WSL - Ubuntu" type="wsl" uuid="28e37ce2-08e0-4b5e-b6ac-7b5721088f38">
+        <config>
+          <option name="distributionMsId" value="Ubuntu" />
+          <option name="projectRootOnTarget" value="{exitCode=0, timeout=false, cancelled=false, stdout=/mnt/c/Users/Vincent/AppData/Local/JetBrains/Toolbox/apps/CLion-Nova/ch-0/233.11868/jbr/bin&#10;, stderr=}/RustCompiler" />
+        </config>
+        <ContributedStateBase type="RsLanguageRuntime">
+          <config>
+            <option name="cargoPath" value="/home/vincent/.cargo/bin/cargo" />
+            <option name="cargoVersion" value="1.74.0 (ecb9851af 2023-10-18)" />
+            <option name="rustcPath" value="/home/vincent/.cargo/bin/rustc" />
+            <option name="rustcVersion" value="1.74.0 (79e9716c9 2023-11-13)" />
+          </config>
+        </ContributedStateBase>
+      </target>
+    </targets>
+  </component>
+</project>
