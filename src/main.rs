@@ -1,10 +1,12 @@
-mod tokenisation;
 mod generate;
+mod parser;
+mod tokenisation;
 
+use crate::generate::Generator;
+use crate::parser::{NodeExit, Parser};
+use crate::tokenisation::Tokeniser;
+use std::process::Command;
 use std::{env, fs};
-use std::process::{Command};
-use crate::generate::tokens_to_assembly;
-use crate::tokenisation::{Tokeniser};
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -17,13 +19,9 @@ fn main() {
     println!("{}", &args[0]);
     println!("{}", file_path);
 
-
-    let contents = fs::read_to_string(file_path)
-        .expect("File has been read");
+    let contents = fs::read_to_string(file_path).expect("File has been read");
 
     println!("{}", contents);
-
-
 
     let mut tokeniser = Tokeniser::new(contents);
     let tokens = tokeniser.tokenize();
@@ -31,10 +29,15 @@ fn main() {
         println!("{:?}", token.token_type);
     }
 
-    let assembly = tokens_to_assembly(tokens);
-    println!("{}", assembly);
+    let mut parser = Parser::new(tokens);
+    let tree: Option<NodeExit> = Some(parser.parse().expect("Failed"));
 
-    fs::write("out.asm", assembly).expect("This didn't work lol");
+    let mut generator = Generator::new(tree.unwrap());
+    println!("Created generator");
+    generator.generate();
+    println!("Generator generated");
+
+    fs::write("out.asm", generator.generate()).expect("This didn't work lol");
 
     let run_assembler = Command::new("sh")
         .args(&["-c", "nasm -felf64 out.asm"])
@@ -49,5 +52,4 @@ fn main() {
         .expect("failed to execute process");
 
     run_linker.stdout;
-
 }

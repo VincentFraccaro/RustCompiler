@@ -1,5 +1,5 @@
-use std::option::Option;
 use crate::tokenisation::TokenType::{IntLit, RETURN, SEMI};
+use std::option::Option;
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum TokenType {
@@ -8,7 +8,7 @@ pub enum TokenType {
     SEMI,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Token {
     pub token_type: TokenType,
     pub value: Option<String>,
@@ -25,11 +25,19 @@ impl Tokeniser {
     }
 
     fn peek(&self) -> Option<char> {
-        self.m_src.chars().nth(self.m_index)
+        if self.m_index + 1 > self.m_src.len() {
+            return None;
+        } else {
+            self.m_src.chars().nth(self.m_index)
+        }
     }
 
     fn consume(&mut self) -> char {
-        let ch = self.m_src.chars().nth(self.m_index).expect("No character to consume");
+        let ch = self
+            .m_src
+            .chars()
+            .nth(self.m_index)
+            .expect("No character to consume");
         self.m_index += 1;
         ch
     }
@@ -46,33 +54,33 @@ impl Tokeniser {
                 }
                 println!("{}", buf);
                 if buf == "return" {
-                    tokens.push(Token {token_type: RETURN, value: None});
+                    tokens.push(Token {
+                        token_type: RETURN,
+                        value: None,
+                    });
                     buf.clear();
-                }
-                else {
+                } else {
                     panic!("We got an issue with trying to make a return token");
                 }
-            }
-
-            else if self.peek().unwrap().is_digit(10){
+            } else if self.peek().unwrap().is_digit(10) {
                 buf.push(self.consume());
-                while self.peek().is_some() && self.peek().unwrap().is_digit(10){
+                while self.peek().is_some() && self.peek().unwrap().is_digit(10) {
                     buf.push(self.consume());
                 }
-                tokens.push(Token{token_type: IntLit, value: Option::from(buf.to_string())});
+                tokens.push(Token {
+                    token_type: IntLit,
+                    value: Option::from(buf.to_string()),
+                });
                 buf.clear();
-            }
-
-            else if self.peek() == Option::from(';') {
+            } else if self.peek() == Option::from(';') {
                 self.consume();
-                tokens.push(Token{token_type:SEMI, value: None});
-            }
-
-            else if self.peek().unwrap().is_whitespace() {
+                tokens.push(Token {
+                    token_type: SEMI,
+                    value: None,
+                });
+            } else if self.peek().unwrap().is_whitespace() {
                 self.consume();
-            }
-
-            else {
+            } else {
                 panic!("Something weird has happened");
             }
         }
