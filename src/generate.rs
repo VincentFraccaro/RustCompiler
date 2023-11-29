@@ -1,89 +1,102 @@
 use crate::parser::{NodeExpr, NodeProg, NodeStatement};
-
-use std::fmt;
-use std::fmt::Debug;
-use std::ops::Deref;
+use std::collections::HashMap;
 use std::fmt::Write;
 
+/// `Generator` is responsible for generating assembly code from an AST (Abstract Syntax Tree).
 pub struct Generator {
-    m_program: NodeProg,
-    m_stack_size: usize,
-    stream: String
+    program: NodeProg,
+    stack_size: usize,
+    vars: HashMap<String, Var>,
+    stream: String,
+}
+
+/// Represents a variable with its stack location.
+struct Var {
+    stack_loc: usize,
 }
 
 impl Generator {
-    
-    pub fn new(m_program: NodeProg) -> Self {
-        Self { m_program, m_stack_size: 0 , stream: "".to_string() }
+    /// Constructs a new code generator for a given program.
+    pub fn new(program: NodeProg) -> Self {
+        Self {
+            program,
+            stack_size: 0,
+            vars: HashMap::new(),
+            stream: String::new(),
+        }
     }
 
-    pub fn pop(&mut self, reg: &str) {
-        write!(&mut self.stream, "    mov rax, {}\n", reg).unwrap();
-        self.m_stack_size -= 1;
-    }
-
-    pub fn generate_expression(&mut self, expr: &NodeExpr) -> String{
-        println!("I am generating expressions");
+    /// Generates assembly code for an expression.
+    pub fn generate_expression(&mut self, expr: &NodeExpr) {
         match expr {
             NodeExpr::NodeExprIntLit(expr_int_lit) => {
-                fmt::Write::write_str(&mut self.stream, concat!("{}{}{}", "    mov rax, ", 1, "\n")).unwrap();
-            },
+                let value = expr_int_lit.int_lit.value.as_ref().expect("Expected int literal value");
+                writeln!(&mut self.stream, "    mov rax, {}", value).expect("Failed to write to stream");
+                self.push("rax");
+            }
             NodeExpr::NodeExprIdent(expr_ident) => {
-
-            },
-            _ => {
-
+                let ident = expr_ident.ident.value.as_ref().expect("Expected identifier value");
+                if let Some(var) = self.vars.get(ident) {
+                    let offset = (self.stack_size - var.stack_loc - 1) * 8;
+                    self.push(&format!("QWORD [rsp + {}]", offset));
+                } else {
+                    eprintln!("Undeclared identifier: {}", ident);
+                    std::process::exit(1);
+                }
             }
         }
-
-        return "".to_string();
     }
 
-    pub fn generate_statement(&mut self, stmt: &NodeStatement) -> String {
-        println!("I am generating statement");
+    /// Generates assembly code for a statement.
+    pub fn generate_statement(&mut self, stmt: &NodeStatement) {
         match stmt {
             NodeStatement::NodeStatementExitEnum(stmt_exit) => {
                 self.generate_expression(&stmt_exit.expr);
-                fmt::Write::write_str(&mut self.stream, "    mov rax, 60\n").unwrap();
+                writeln!(&mut self.stream, "    mov rax, 60").expect("Failed to write to stream");
                 self.pop("rdi");
-            },
+                writeln!(&mut self.stream, "    syscall").expect("Failed to write to stream");
+            }
             NodeStatement::NodeStatementLetEnum(stmt_let) => {
-
-            },
-            _ => {
-
+                let ident = stmt_let.ident.value.as_ref().expect("Expected identifier value");
+                if self.vars.contains_key(ident) {
+                    eprintln!("Identifier already used: {}", ident);
+                    std::process::exit(1);
+                }
+                self.vars.insert(
+                    ident.clone(),
+                    Var {
+                        stack_loc: self.stack_size,
+                    },
+                );
+                self.generate_expression(&stmt_let.expr);
             }
         }
-        return " ".to_string();
     }
 
+    /// Generates assembly code for the entire program.
     pub fn generate_program(&mut self) -> String {
-        self.stream = String::from("global _start\n_start:\n");
+        writeln!(&mut self.stream, "global _start\n_start:").expect("Failed to write to stream");
 
-        // Iterate over a reference to the vector's content
-        for stmt in &self.m_program.statements {
-            generate_statement(stmt);
-            println!("stmt is {:?}", stmt);
+        let statements = self.program.statements.clone();
+        for stmt in statements {
+            self.generate_statement(&stmt);
         }
 
-        fmt::Write::write_str(&mut self.stream, "    mov rax, 60\n").unwrap();
-        fmt::Write::write_str(&mut self.stream, "    mov rdi, 42\n").unwrap();
-        fmt::Write::write_str(&mut self.stream, "    syscall\n").unwrap();
+        writeln!(&mut self.stream, "    mov rax, 60").expect("Failed to write to stream");
+        writeln!(&mut self.stream, "    mov rdi, 0").expect("Failed to write to stream");
+        writeln!(&mut self.stream, "    syscall").expect("Failed to write to stream");
         self.stream.clone()
     }
-}
 
-pub fn generate_statement(stmt: &NodeStatement) -> String {
-    match stmt {
-        NodeStatement::NodeStatementExitEnum(stmt_exit) => {
-            println!("Exit enum");
-        },
-        NodeStatement::NodeStatementLetEnum(stmt_let) => {
-            println!("Statement enum");
-        },
-        _ => {
-            println!("What am i ");
-        }
+    /// Helper function to push a register onto the stack.
+    fn push(&mut self, reg: &str) {
+        writeln!(&mut self.stream, "    push {}", reg).expect("Failed to write to stream");
+        self.stack_size += 1;
     }
-    return " ".to_string();
+
+    /// Helper function to pop a register from the stack.
+    fn pop(&mut self, reg: &str) {
+        writeln!(&mut self.stream, "    pop {}", reg).expect("Failed to write to stream");
+        self.stack_size -= 1;
+    }
 }

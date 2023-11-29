@@ -1,14 +1,16 @@
 mod generate;
 mod parser;
-mod tokenisation;
+mod tokenization;
 
 use crate::generate::Generator;
 use crate::parser::{NodeProg, Parser};
-use crate::tokenisation::Tokeniser;
+use crate::tokenization::Tokenizer;
 use std::process::Command;
+use std::time::Instant;
 use std::{env, fs};
 
 fn main() {
+    let start = Instant::now();
     let args: Vec<String> = env::args().collect();
 
     if args.len() <= 1 {
@@ -23,8 +25,8 @@ fn main() {
 
     println!("{}", contents);
 
-    let mut tokeniser = Tokeniser::new(contents);
-    let tokens = tokeniser.tokenize();
+    let mut tokenizer = Tokenizer::new(contents.as_str());
+    let tokens = tokenizer.tokenize();
     for token in &tokens {
         println!("I am this token {:?}", token.token_type);
     }
@@ -36,8 +38,6 @@ fn main() {
     println!("About to generate");
     let mut generator = Generator::new(tree.unwrap());
     println!("Created generator");
-    /*generator.generate_program();
-    println!("Generator generated");*/
 
     fs::write("out.asm", generator.generate_program()).expect("This didn't work lol");
 
@@ -54,4 +54,8 @@ fn main() {
         .expect("failed to execute process");
 
     run_linker.stdout;
+
+    let duration = start.elapsed();
+
+    println!("Compilation took: {:?}", duration);
 }
