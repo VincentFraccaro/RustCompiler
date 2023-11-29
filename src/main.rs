@@ -3,7 +3,7 @@ mod parser;
 mod tokenisation;
 
 use crate::generate::Generator;
-use crate::parser::{NodeExit, Parser};
+use crate::parser::{NodeProg, Parser};
 use crate::tokenisation::Tokeniser;
 use std::process::Command;
 use std::{env, fs};
@@ -26,18 +26,20 @@ fn main() {
     let mut tokeniser = Tokeniser::new(contents);
     let tokens = tokeniser.tokenize();
     for token in &tokens {
-        println!("{:?}", token.token_type);
+        println!("I am this token {:?}", token.token_type);
     }
 
     let mut parser = Parser::new(tokens);
-    let tree: Option<NodeExit> = Some(parser.parse().expect("Failed"));
 
+    let tree: Option<NodeProg> = Some(parser.parse_program().expect("Parse program failed"));
+
+    println!("About to generate");
     let mut generator = Generator::new(tree.unwrap());
     println!("Created generator");
-    generator.generate();
-    println!("Generator generated");
+    /*generator.generate_program();
+    println!("Generator generated");*/
 
-    fs::write("out.asm", generator.generate()).expect("This didn't work lol");
+    fs::write("out.asm", generator.generate_program()).expect("This didn't work lol");
 
     let run_assembler = Command::new("sh")
         .args(&["-c", "nasm -felf64 out.asm"])
